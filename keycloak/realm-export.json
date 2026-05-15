@@ -1,0 +1,105 @@
+{
+  "realm": "pfe",
+  "enabled": true,
+  "displayName": "PFE - SSO DevSecOps",
+  "users": [
+    {
+      "username": "alice",
+      "email": "alice@pfe.local",
+      "firstName": "Alice",
+      "lastName": "Admin",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{"type": "password", "value": "password", "temporary": false}],
+      "realmRoles": ["admin"]
+    },
+    {
+      "username": "bob",
+      "email": "bob@pfe.local",
+      "firstName": "Bob",
+      "lastName": "Manager",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{"type": "password", "value": "password", "temporary": false}],
+      "realmRoles": ["manager"]
+    },
+    {
+      "username": "charlie",
+      "email": "charlie@pfe.local",
+      "firstName": "Charlie",
+      "lastName": "User",
+      "enabled": true,
+      "emailVerified": true,
+      "credentials": [{"type": "password", "value": "password", "temporary": false}],
+      "realmRoles": ["user"]
+    }
+  ],
+  "clients": [
+    {
+      "clientId": "app-iam",
+      "enabled": true,
+      "secret": "iam-secret",
+      "redirectUris": ["https://192.168.222.146/iam/*", "https://192.168.222.146/"],
+      "attributes": {"post.logout.redirect.uris": "https://192.168.222.146/"},
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "app-ticketing",
+      "enabled": true,
+      "secret": "ticketing-secret",
+      "redirectUris": ["https://192.168.222.146/ticketing/*", "https://192.168.222.146/"],
+      "attributes": {"post.logout.redirect.uris": "https://192.168.222.146/"},
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "app-audit",
+      "enabled": true,
+      "secret": "audit-secret",
+      "redirectUris": ["https://192.168.222.146/audit/*", "https://192.168.222.146/"],
+      "attributes": {"post.logout.redirect.uris": "https://192.168.222.146/"},
+      "protocolMappers": [
+        {
+          "name": "realm-roles-mapper",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "multivalued": "true",
+            "userinfo.token.claim": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "claim.name": "roles",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ]
+}

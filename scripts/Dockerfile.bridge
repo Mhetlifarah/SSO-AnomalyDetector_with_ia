@@ -1,0 +1,8 @@
+FROM python:3.12-slim
+
+RUN pip install --no-cache-dir kafka-python psycopg2-binary
+
+WORKDIR /app
+
+# -u désactive le buffer Python pour voir les logs en temps réel
+CMD ["python", "-u", "keycloak_to_kafka.py"]

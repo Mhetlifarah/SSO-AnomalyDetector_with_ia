@@ -1,0 +1,8 @@
+console:
+  allowedOrigins:
+    - "https://192.168.222.146:8443"
+    - "http://192.168.222.146:8081"
+
+kafka:
+  brokers:
+    - kafka:9092

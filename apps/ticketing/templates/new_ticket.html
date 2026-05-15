@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">📝 Nouveau ticket</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Titre *</label>
+                        <input type="text" name="title" class="form-control" required 
+                               placeholder="Décrivez brièvement le problème">
+                        <div class="form-text">Ex: "Impossible d'accéder au VPN"</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="5" 
+                                  placeholder="Détails du problème…"></textarea>
+                        <div class="form-text">Décrivez le problème en détail.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Priorité</label>
+                        <select name="priority" class="form-select">
+                            <option value="low">🟢 Basse</option>
+                            <option value="medium" selected>🟡 Moyenne</option>
+                            <option value="high">🔴 Haute</option>
+                        </select>
+                    </div>
+                    
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">Annuler</a>
+                        <button type="submit" class="btn btn-primary">Créer le ticket</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

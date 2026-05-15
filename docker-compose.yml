@@ -1,0 +1,447 @@
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: pfe-postgres
+    environment:
+      POSTGRES_USER: pfe
+      POSTGRES_PASSWORD: pfe_secret
+      POSTGRES_DB: keycloak
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./scripts/init-dbs.sql:/docker-entrypoint-initdb.d/init-dbs.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pfe"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  lldap:
+    image: lldap/lldap:stable
+    container_name: pfe-lldap
+    environment:
+      - LLDAP_JWT_SECRET=super-secret-jwt-key-change-me
+      - LLDAP_LDAP_USER_PASS=admin_password
+      - LLDAP_LDAP_BASE_DN=dc=pfe,dc=local
+    ports:
+      - "3890:3890"
+      - "17170:17170"
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: pfe-keycloak
+    command:
+      - start
+      - --import-realm
+      - --proxy-headers=xforwarded
+      - --http-relative-path=/auth
+      - --hostname-strict=false
+      - --hostname-strict-https=false
+      - --http-enabled=true
+      - --http-port=8080
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: pfe
+      KC_DB_PASSWORD: pfe_secret
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HOSTNAME_STRICT: "false"
+      KC_HOSTNAME_STRICT_HTTPS: "false"
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+      KC_HOSTNAME_URL: https://192.168.222.146/auth
+      KC_PROXY: edge  #######
+      PROXY_ADDRESS_FORWARDING: "true" ########
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  app-iam:
+    image: pfe-app-iam:fixed
+    container_name: pfe-app-iam
+    volumes:
+      - ./shared/oidc.py:/app/oidc.py:ro
+      - ./shared/database.py:/app/database.py:ro
+      - ./shared/kafka_logger.py:/app/kafka_logger.py:ro
+      - ./apps/notification-ws/static/alerts.js:/app/static/js/alerts.js:ro
+    environment:
+      APP_NAME: IAM
+      APP_SECRET_KEY: pfe-super-secret-common-key-2026
+      SECRET_KEY: pfe-super-secret-common-key-2026
+      OIDC_CLIENT_ID: app-iam
+      OIDC_CLIENT_SECRET: iam-secret
+      OIDC_ISSUER: http://keycloak:8080/auth/realms/pfe
+      OIDC_EXTERNAL_ISSUER: https://192.168.222.146/auth/realms/pfe
+      OIDC_REDIRECT_URI: https://192.168.222.146/iam/callback
+      DATABASE_URL: postgresql://pfe:pfe_secret@postgres:5432/iam_db
+      KAFKA_BOOTSTRAP: pfe-kafka:9092
+      FLASK_PORT: "5001"
+    depends_on:
+      - keycloak
+      - kafka
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  app-ticketing:
+    image: pfe-app-ticketing:fixed
+    container_name: pfe-app-ticketing
+    volumes:
+      - ./shared/oidc.py:/app/oidc.py:ro
+      - ./shared/database.py:/app/database.py:ro
+      - ./shared/kafka_logger.py:/app/kafka_logger.py:ro
+      - ./apps/notification-ws/static/alerts.js:/app/static/js/alerts.js:ro
+    environment:
+      APP_NAME: Ticketing
+      APP_SECRET_KEY: pfe-super-secret-common-key-2026
+      SECRET_KEY: pfe-super-secret-common-key-2026
+      OIDC_CLIENT_ID: app-ticketing
+      OIDC_CLIENT_SECRET: ticketing-secret
+      OIDC_ISSUER: http://keycloak:8080/auth/realms/pfe
+      OIDC_EXTERNAL_ISSUER: https://192.168.222.146/auth/realms/pfe
+      OIDC_REDIRECT_URI: https://192.168.222.146/ticketing/callback
+      DATABASE_URL: postgresql://pfe:pfe_secret@postgres:5432/ticketing_db
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: ticketing_db
+      DB_USER: pfe
+      DB_PASS: pfe_secret
+      KAFKA_BOOTSTRAP: pfe-kafka:9092
+      FLASK_PORT: "5002"
+    depends_on:
+      - keycloak
+      - kafka
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  app-audit:
+    image: pfe-app-audit:fixed
+    container_name: pfe-app-audit
+    volumes:
+      - ./shared/oidc.py:/app/oidc.py:ro
+      - ./shared/database.py:/app/database.py:ro
+      - ./shared/kafka_logger.py:/app/kafka_logger.py:ro
+      - ./apps/notification-ws/static/alerts.js:/app/static/js/alerts.js:ro
+    environment:
+      APP_NAME: Audit
+      APP_SECRET_KEY: pfe-super-secret-common-key-2026
+      SECRET_KEY: pfe-super-secret-common-key-2026
+      OIDC_CLIENT_ID: app-audit
+      OIDC_CLIENT_SECRET: audit-secret
+      OIDC_ISSUER: http://keycloak:8080/auth/realms/pfe
+      OIDC_EXTERNAL_ISSUER: https://192.168.222.146/auth/realms/pfe
+      OIDC_REDIRECT_URI: https://192.168.222.146/audit/callback
+      DATABASE_URL: postgresql://pfe:pfe_secret@postgres:5432/audit_db
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_NAME: audit_db
+      DB_USER: pfe
+      DB_PASS: pfe_secret
+      IAM_DB_HOST: postgres
+      IAM_DB_PORT: "5432"
+      IAM_DB_NAME: iam_db
+      IAM_DB_USER: pfe
+      IAM_DB_PASS: pfe_secret
+      TICK_DB_HOST: postgres
+      TICK_DB_PORT: "5432"
+      TICK_DB_NAME: ticketing_db
+      TICK_DB_USER: pfe
+      TICK_DB_PASS: pfe_secret
+      KAFKA_BOOTSTRAP: pfe-kafka:9092
+      FLASK_PORT: "5003"
+    depends_on:
+      - keycloak
+      - kafka
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: pfe-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: pfe-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - pfe-net
+    restart: unless-stopped
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+
+  keycloak-kafka-bridge:
+    build:
+      context: ./scripts
+      dockerfile: Dockerfile.bridge
+    image: pfe-keycloak-bridge:fixed
+    container_name: pfe-keycloak-bridge
+    working_dir: /app
+    volumes:
+      - ./scripts/keycloak_to_kafka.py:/app/keycloak_to_kafka.py:ro
+    environment:
+      KAFKA_BOOTSTRAP: kafka:9092
+      KAFKA_TOPIC: keycloak-events
+      KEYCLOAK_DB_HOST: postgres
+      KEYCLOAK_DB_PORT: "5432"
+      KEYCLOAK_DB_NAME: keycloak
+      KEYCLOAK_DB_USER: pfe
+      KEYCLOAK_DB_PASS: pfe_secret
+      IAM_DB_HOST: postgres
+      IAM_DB_PORT: "5432"
+      IAM_DB_NAME: iam_db
+      IAM_DB_USER: pfe
+      IAM_DB_PASS: pfe_secret
+      TICKETING_DB_HOST: postgres
+      TICKETING_DB_PORT: "5432"
+      TICKETING_DB_NAME: ticketing_db
+      TICKETING_DB_USER: pfe
+      TICKETING_DB_PASS: pfe_secret
+      AUDIT_DB_HOST: postgres
+      AUDIT_DB_PORT: "5432"
+      AUDIT_DB_NAME: audit_db
+      AUDIT_DB_USER: pfe
+      AUDIT_DB_PASS: pfe_secret
+    depends_on:
+      kafka:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: pfe-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - pfe-net
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  notification-ws:
+    build:
+      context: ./apps/notification-ws
+      dockerfile: Dockerfile
+    container_name: pfe-notification-ws
+    restart: unless-stopped
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - WS_PORT=8765
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - pfe-net
+
+  anomaly-detector:
+    build:
+      context: ./apps/anomaly-detector
+      dockerfile: Dockerfile
+    container_name: pfe-anomaly-detector
+    restart: unless-stopped
+    environment:
+      DB_HOST: postgres
+      DB_PORT: "5432"
+      DB_USER: pfe
+      DB_PASSWORD: pfe_secret
+      ANALYSIS_INTERVAL: "300"
+      ANOMALY_THRESHOLD: "0.6"
+      LOOKBACK_HOURS: "24"
+      KAFKA_BOOTSTRAP: pfe-kafka:9092
+      KAFKA_TOPIC: keycloak-events
+      KAFKA_GROUP: anomaly-detector-v8-replay
+      ES_HOST: http://pfe-elasticsearch:9200
+      ES_INDEX: security-events
+      BRUTE_FORCE_ATTEMPTS: 5
+      BRUTE_FORCE_WINDOW_SECONDS: 60
+      SUSPICIOUS_HOURS: "20,21,22,23,0,1,2,3,4,5,6"
+      MAX_IPS_PER_USER: 3
+      DOS_REQUEST_THRESHOLD: 100
+      DOS_WINDOW_SECONDS: 60
+      TRAINING_MIN_EVENTS: 50
+      ML_ENABLED: "true"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL:-}
+      KIBANA_URL: "https://192.168.222.146/kibana"
+      RESPONDER_ENABLED: "true"
+      KC_ADMIN_URL: "http://keycloak:8080"
+      KC_ADMIN_USER: "admin"
+      KC_ADMIN_PASS: "Admin-Admin-pfe-99"
+      KC_REALM: "master"
+      KC_TARGET_REALM: "pfe"
+      NGINX_BAN_DIR: "/shared/nginx"
+    volumes:
+      - model_data:/app/models
+      - ./apps/anomaly-detector/detector_slack.py:/app/detector_slack.py:ro ##########"
+      - ./apps/anomaly-detector/models/isolation_forest.py:/app/models/isolation_forest.py:ro
+      - ./apps/anomaly-detector/train_model.py:/app/train_model.py:ro
+      - ./apps/anomaly-detector/evaluate_combined.py:/app/evaluate_combined.py:ro
+      - ./apps/anomaly-detector/entrypoint.sh:/app/entrypoint.sh:ro
+      - ./apps/anomaly-detector/config.py:/app/config.py:ro   ###########
+      - ./apps/anomaly-detector/responder.py:/app/responder.py:ro
+      - nginx_ban:/shared/nginx
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - pfe-net
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: pfe-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+      - xpack.license.self_generated.type=basic
+      - xpack.monitoring.collection.enabled=true
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+      - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9200"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:8.11.0
+    container_name: pfe-kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+      - SERVER_BASEPATH=/kibana
+      - SERVER_REWRITEBASEPATH=true
+      - I18N_LOCALE=fr
+    volumes:
+      - ./kibana/kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    ports:
+      - "5601:5601"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: pfe-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - pfe-net
+
+  redpanda-console:
+    image: docker.redpanda.com/redpandadata/console:v2.3.1
+    container_name: pfe-redpanda-console
+    ports:
+      - "8081:8080"
+    environment:
+      KAFKA_BROKERS: kafka:9092
+      KAFKA_CONSUMER_DEFAULTOFFSETSTART: OLDEST
+    depends_on:
+      kafka:
+        condition: service_healthy
+    networks:
+      - pfe-net
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    container_name: pfe-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/certs:ro
+      - nginx_ban:/etc/nginx/denied_ips:ro
+    depends_on:
+      - keycloak
+      - app-iam
+      - app-ticketing
+      - app-audit
+      - kibana
+      - notification-ws
+    networks:
+      - pfe-net
+    restart: always
+
+volumes:
+  kafka-data:
+  pg_data:
+  redis_data:
+  es_data:
+  model_data:
+  nginx_ban:
+
+networks:
+  pfe-net:
+    driver: bridge

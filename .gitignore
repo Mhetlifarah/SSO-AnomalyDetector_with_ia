@@ -1,0 +1,49 @@
+# Secrets
+.env
+*.key
+*.pem
+*.crt
+
+# Ancien git
+.git-old/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pkl
+
+# Backups
+*.bak
+*.bak2
+*.save
+*.corrupted.*
+
+# Data volumes
+postgres-data/
+elasticsearch-data/
+kafka-data/
+zookeeper-data/
+redis-data/
+
+# Docker volumes
+shared/nginx/denied_ips.conf
+
+# Scripts temporaires
+fix_*.py
+upgrade_*.py
+export_*.py
+ml_diagnostic.py
+evaluate*.py
+macro_detector.py
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# ML models (trop lourds pour git)
+models/*.pkl

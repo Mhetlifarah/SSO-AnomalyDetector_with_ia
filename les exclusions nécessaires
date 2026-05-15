@@ -1,0 +1,42 @@
+ TOUS.save                                        |     1 [31m-[m
+ apps/anomaly-detector/Dockerfile                 |    29 [32m+[m[31m-[m
+ apps/anomaly-detector/config.py                  |   199 [32m+[m[31m-[m
+ apps/anomaly-detector/detector.py                |   672 [32m+[m[31m-[m
+ apps/anomaly-detector/models/isolation_forest.py |   289 [32m+[m[31m-[m
+ apps/anomaly-detector/requirements.txt           |     9 [32m+[m[31m-[m
+ apps/anomaly-detector/test_scenarios.py          |   199 [31m-[m
+ apps/anomaly-detector/train_model.py             |   294 [32m+[m[31m-[m
+ apps/audit/Dockerfile                            |    11 [32m+[m[31m-[m
+ apps/audit/app.py                                |   366 [32m+[m[31m-[m
+ apps/audit/templates/index.html                  |   110 [32m+[m[31m-[m
+ apps/audit/templates/logs.html                   |   104 [32m+[m[31m-[m
+ apps/iam/Dockerfile                              |    11 [32m+[m[31m-[m
+ apps/iam/app.py                                  |   332 [32m+[m[31m-[m
+ apps/iam/templates/index.html                    |    91 [32m+[m[31m-[m
+ apps/ticketing/Dockerfile                        |    11 [32m+[m[31m-[m
+ apps/ticketing/app.py                            |   399 [32m+[m[31m-[m
+ apps/ticketing/templates/index.html              |    49 [32m+[m[31m-[m
+ apps/ticketing/templates/new_ticket.html         |     2 [32m+[m[31m-[m
+ apps/ticketing/templates/view_ticket.html        |     2 [32m+[m[31m-[m
+ cookies.txt                                      |     4 [31m-[m
+ docker-compose.yml                               |   349 [32m+[m[31m-[m
+ get-pip.py                                       | 27506 [31m-----------------------------------------------------------[m
+ grafana/dashboards/03-model-performance.json     |     1 [31m-[m
+ keycloak/realm-export.json.backup                |   204 [31m-[m
+ nginx/nginx.conf                                 |   167 [32m+[m[31m-[m
+ nginx/nginx.conf.backup                          |    84 [31m-[m
+ nginx/nginx.conf.bak                             |    26 [31m-[m
+ nginx/nginx.conf.save                            |    74 [31m-[m
+ scripts/keycloak_to_kafka.py                     |   885 [32m+[m[31m-[m
+ scripts/keycloak_to_kafka.py.bak                 |   135 [31m-[m
+ scripts/last_id_audit.txt                        |     2 [32m+[m[31m-[m
+ scripts/last_id_iam.txt                          |     2 [32m+[m[31m-[m
+ scripts/last_id_ticketing.txt                    |     2 [32m+[m[31m-[m
+ scripts/last_time_keycloak.txt                   |     2 [32m+[m[31m-[m
+ scripts/simulate_data.py                         |    81 [31m-[m
+ shared/__pycache__/database.cpython-312.pyc      |   Bin [31m4023[m -> [32m0[m bytes
+ shared/__pycache__/oidc.cpython-312.pyc          |   Bin [31m7633[m -> [32m0[m bytes
+ shared/database.py.bak                           |   111 [31m-[m
+ shared/oidc.py                                   |   290 [32m+[m[31m-[m
+ shared/templates/base.html                       |     6 [32m+[m[31m-[m
+ 41 files changed, 2599 insertions(+), 30512 deletions(-)

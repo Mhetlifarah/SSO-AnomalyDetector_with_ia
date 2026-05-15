@@ -1,0 +1,3 @@
+CREATE DATABASE iam_db;
+CREATE DATABASE ticketing_db;
+CREATE DATABASE audit_db;

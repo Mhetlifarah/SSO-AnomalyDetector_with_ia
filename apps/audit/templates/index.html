@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% set src_colors = {'IAM': '#0d6efd', 'Ticketing': '#6f42c1', 'Audit': '#198754'} %}
+{% set src_icons = {'IAM': 'shield-lock', 'Ticketing': 'ticket-perforated', 'Audit': 'journal-check'} %}
+
+<!-- Stats globales -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="glass-card stat-card">
+            <div class="stat-number">{{ stats.total_logs }}</div>
+            <div class="stat-label"><i class="bi bi-journal-text"></i> Actions totales (3 apps)</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card stat-card">
+            <div class="stat-number">{{ stats.total_users }}</div>
+            <div class="stat-label"><i class="bi bi-people"></i> Utilisateurs actifs</div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card stat-card">
+            <div class="stat-number">{{ stats.today_logs }}</div>
+            <div class="stat-label"><i class="bi bi-calendar-event"></i> Actions aujourd'hui</div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats par source -->
+<div class="row mb-4">
+    {% for source_name, source_data in stats.by_source.items() %}
+    <div class="col-md-4">
+        <div class="glass-card" style="border-left: 4px solid {{ source_data.color }};">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-{{ source_data.icon }} me-2" style="color:{{ source_data.color }}; font-size:1.3rem;"></i>
+                    <strong style="color:{{ source_data.color }}">{{ source_name }}</strong>
+                </div>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="fw-bold" style="font-size:1.2rem;">{{ source_data.total }}</div>
+                        <small class="text-muted">Total</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold" style="font-size:1.2rem;">{{ source_data.users }}</div>
+                        <small class="text-muted">Users</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="fw-bold" style="font-size:1.2rem;">{{ source_data.today }}</div>
+                        <small class="text-muted">Auj.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Dernieres actions -->
+<div class="glass-card">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0"><i class="bi bi-clock-history me-2" style="color:var(--pfe-accent)"></i>Dernieres actions</h5>
+            {% if 'admin' in user.roles or 'manager' in user.roles %}
+            <a href="{{ url_for('logs_page') }}" class="btn btn-accent btn-sm">
+                <i class="bi bi-list-ul me-1"></i>Voir tous les logs
+            </a>
+            {% endif %}
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover table-sm">
+                <thead>
+                    <tr><th>Source</th><th>Date</th><th>Utilisateur</th><th>Action</th><th>IP</th></tr>
+                </thead>
+                <tbody>
+                    {% for log in recent_logs %}
+                    <tr>
+                        <td>
+                            <span class="source-badge" style="background:{{ log.source_color if log.source_color else src_colors.get(log.source, '#6c757d') }}">
+                                <i class="bi bi-{{ log.source_icon if log.source_icon else src_icons.get(log.source, 'question-circle') }}"></i> {{ log.source }}
+                            </span>
+                        </td>
+                        <td class="small">
+                            {% if log.timestamp %}
+                                {% if log.timestamp.strftime is defined %}
+                                    {{ log.timestamp.strftime('%d/%m %H:%M:%S') }}
+                                {% else %}
+                                    {{ log.timestamp[:16] if log.timestamp|string|length > 16 else log.timestamp }}
+                                {% endif %}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td><strong>{{ log.username or '-' }}</strong></td>
+                        <td><span class="badge bg-secondary">{{ log.action }}</span></td>
+                        <td class="text-muted small">{{ log.ip_address or '-' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,13 @@
+server.port: 5601
+server.host: "0.0.0.0"
+server.name: "pfe-kibana"
+elasticsearch.hosts: ["http://elasticsearch:9200"]
+server.basePath: "/kibana"
+server.rewriteBasePath: true
+server.publicBaseUrl: "https://192.168.222.146/kibana"
+i18n.locale: "fr"
+xpack.security.encryptionKey: "pfe_devsecops_encryption_key_2026_minimum_32_chars!"
+xpack.encryptedSavedObjects.encryptionKey: "pfe_devsecops_saved_objects_key_2026_32c!"
+xpack.reporting.encryptionKey: "pfe_devsecops_reporting_key_2026_min_32!"
+server.customResponseHeaders:
+  Cross-Origin-Embedder-Policy: require-corp
